@@ -814,7 +814,7 @@ object Instructions {
   def XPERM4             = BitPat("b0010100??????????010?????0110011")
   def XPERM8             = BitPat("b0010100??????????100?????0110011")
   def ZEXT_H             = BitPat("b000010000000?????100?????0111011")
-
+  def URET               = BitPat("b00000000001000000000000001110011")
 }
 object Causes {
   val misaligned_fetch = 0x0
@@ -1199,6 +1199,20 @@ object CSRs {
   val mhpmcounter29h = 0xb9d
   val mhpmcounter30h = 0xb9e
   val mhpmcounter31h = 0xb9f
+  /* User Trap Setup */
+  val ustatus = 0x000
+  val uie = 0x004
+  val utvec = 0x005
+  /* User Trap Handling */
+  val uscratch = 0x040
+  val uepc = 0x041
+  val ucause = 0x042
+  val utval = 0x043
+  val uip = 0x044
+  /* User Interrupt Status */
+  val suist = 0x1b0
+  val suirs = 0x1b1
+  val suicfg = 0x1b2
   val all = {
     val res = collection.mutable.ArrayBuffer[Int]()
     res += fflags
@@ -1471,6 +1485,17 @@ object CSRs {
     res += mimpid
     res += mhartid
     res += mconfigptr
+    res += ustatus
+    res += uie
+    res += utvec
+    res += uscratch
+    res += uepc
+    res += ucause
+    res += utval
+    res += uip
+    res += suist
+    res += suirs
+    res += suicfg
     res.toArray
   }
   val all32 = {

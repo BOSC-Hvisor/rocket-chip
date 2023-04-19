@@ -185,6 +185,7 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
     (usingVM.option(new SVMDecode)) ++:
     (usingSupervisor.option(new SDecode)) ++:
     (usingHypervisor.option(new HypervisorDecode)) ++:
+    (usingUser.option(new UDecode)) ++:
     ((usingHypervisor && (xLen == 64)).option(new Hypervisor64Decode)) ++:
     (usingDebug.option(new DebugDecode)) ++:
     (usingNMI.option(new NMIDecode)) ++:

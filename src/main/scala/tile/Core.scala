@@ -26,6 +26,7 @@ trait CoreParams {
   val useVector: Boolean = false
   val useSCIE: Boolean
   val useRVE: Boolean
+  val useUintr: Boolean
   val mulDiv: Option[MulDivParams]
   val fpu: Option[FPUParams]
   val fetchWidth: Int
@@ -82,6 +83,7 @@ trait HasCoreParameters extends HasTileParameters {
   val usingVector = coreParams.useVector
   val usingSCIE = coreParams.useSCIE
   val usingNMI = coreParams.useNMI
+  val usingUintr = coreParams.useUintr
 
   val retireWidth = coreParams.retireWidth
   val fetchWidth = coreParams.fetchWidth

@@ -23,6 +23,8 @@ class TileInterrupts(implicit p: Parameters) extends CoreBundle()(p) {
   val seip = usingSupervisor.option(Bool())
   val lip = Vec(coreParams.nLocalInterrupts, Bool())
   val nmi = usingNMI.option(new NMI(resetVectorLen))
+
+  // TODO： ADD UINTC usip
 }
 
 // Use diplomatic interrupts to external interrupts from the subsystem into the tile
