@@ -383,15 +383,15 @@ class CSRFile(
 
   val (supported_interrupts, delegable_interrupts) = {
     val sup = Wire(new MIP)
-    sup.usip := Bool(usingUser && usingUintr)
+    sup.usip := Bool(usingUser)
     sup.ssip := Bool(usingSupervisor)
     sup.vssip := Bool(usingHypervisor)
     sup.msip := true
-    sup.utip := Bool(usingUser && usingUintr)
+    sup.utip := Bool(usingUser)
     sup.stip := Bool(usingSupervisor)
     sup.vstip := Bool(usingHypervisor)
     sup.mtip := true
-    sup.ueip := Bool(usingUser && usingUintr)
+    sup.ueip := Bool(usingUser)
     sup.seip := Bool(usingSupervisor)
     sup.vseip := Bool(usingHypervisor)
     sup.meip := true
@@ -566,7 +566,7 @@ class CSRFile(
     del.utip := true
     del.ueip := true
     val reg = Reg(UInt(width = xLen))
-    (reg, Mux(usingUser && usingUintr, reg & del.asUInt, 0.U))
+    (reg, Mux(usingUser, reg & del.asUInt, 0.U))
   }
   val reg_ucause = Reg(UInt(width = xLen))
   val reg_uepc = Reg(UInt(width = vaddrBitsExtended))
@@ -588,6 +588,8 @@ class CSRFile(
   mip.meip := io.interrupts.meip
   // seip is the OR of reg_mip.seip and the actual line from the PLIC
   io.interrupts.seip.foreach { mip.seip := reg_mip.seip || _ }
+  // usip is the OR of reg_mip.usip and the actual line from the UINTC
+  io.interrupts.usip.foreach { mip.usip := reg_mip.usip || _ }
   // Simimlar sort of thing would apply if the PLIC had a VSEIP line:
   //io.interrupts.vseip.foreach { mip.vseip := reg_mip.vseip || _ }
   mip.rocc := io.rocc_interrupt
@@ -820,7 +822,7 @@ class CSRFile(
   // mimpid, marchid, and mvendorid are 0 unless overridden by customCSRs
   Seq(CSRs.mimpid, CSRs.marchid, CSRs.mvendorid).foreach(id => read_mapping.getOrElseUpdate(id, 0.U))
 
-  if (usingUser && usingUintr) {
+  if (usingUser) {
     val read_uie = reg_mie & read_sideleg
     val read_uip = read_mip & read_sideleg
     val read_ustatus = Wire(init = 0.U.asTypeOf(new MStatus))
@@ -958,7 +960,7 @@ class CSRFile(
   val debugTVec = Mux(reg_debug, Mux(insn_break, debugEntry.U, debugException.U), debugEntry.U)
   val delegate = Bool(usingSupervisor) && reg_mstatus.prv <= PRV.S && Mux(cause(xLen-1), read_mideleg(cause_lsbs), read_medeleg(cause_lsbs))
   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_lsbs), read_hedeleg(cause_lsbs))
-  val delegateU = Bool(usingUser && usingUintr) && reg_mstatus.prv === PRV.U && delegate && read_sideleg(cause_lsbs)
+  val delegateU = Bool(usingUser) && reg_mstatus.prv === PRV.U && delegate && read_sideleg(cause_lsbs)
   def mtvecBaseAlign = 2
   def mtvecInterruptAlign = {
     require(reg_mip.getWidth <= xLen)
@@ -1109,7 +1111,7 @@ class CSRFile(
 
   when (insn_ret) {
     val ret_prv = WireInit(UInt(), DontCare)
-    when (Bool(usingUser && usingUintr) && !io.rw.addr(9) && !io.rw.addr(8)) {
+    when (Bool(usingUser) && !io.rw.addr(9) && !io.rw.addr(8)) {
       reg_mstatus.uie := reg_mstatus.upie
       reg_mstatus.upie := true
       ret_prv := PRV.U
@@ -1505,7 +1507,7 @@ class CSRFile(
       }
     }
 
-    if (usingUser && usingUintr) {
+    if (usingUser) {
       when (decoded_addr(CSRs.ustatus)) {
         val new_ustatus = new MStatus().fromBits(wdata)
         reg_mstatus.uie := new_ustatus.uie

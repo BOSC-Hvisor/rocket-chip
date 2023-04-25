@@ -95,7 +95,7 @@ class AddDefaultTests extends Phase with PreservesAll[Phase] with HasRocketChipS
           tests ++= env.map(if (xlen == 64) rv64uaSansLRSC else rv32uaSansLRSC)
       }
       if (coreParams.useCompressed) tests ++= env.map(if (xlen == 64) rv64uc else rv32uc)
-      if (coreParams.useUintr && xlen == 64) tests ++= env.map(rv64sn)
+      if (coreParams.useUser && xlen == 64) tests ++= env.map(rv64sn)
       val (rvi, rvu) =
         if (xlen == 64) ((if (vm) rv64i else rv64pi), rv64u)
         else ((if (vm) rv32i else rv32pi), rv32u)

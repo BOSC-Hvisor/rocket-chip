@@ -10,6 +10,7 @@ import freechips.rocketchip.devices.tilelink._
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.rocket._
 import freechips.rocketchip.tile._
+import freechips.rocketchip.uintr.{UINTCKey, UINTCParams}
 import freechips.rocketchip.util._
 
 class BaseSubsystemConfig extends Config ((site, here, up) => {
@@ -42,6 +43,7 @@ class BaseSubsystemConfig extends Config ((site, here, up) => {
   case DebugModuleKey => Some(DefaultDebugModuleParams(site(XLen)))
   case CLINTKey => Some(CLINTParams())
   case PLICKey => Some(PLICParams())
+  case UINTCKey => Some(UINTCParams())
   case TilesLocated(InSubsystem) => 
     LegacyTileFieldHelper(site(RocketTilesKey), site(RocketCrossingKey), RocketTileAttachParams.apply _)
 })
@@ -93,10 +95,13 @@ class WithNBigCores(n: Int, overrideIdOffset: Option[Int] = None) extends Config
     val prev = up(RocketTilesKey, site)
     val idOffset = overrideIdOffset.getOrElse(prev.size)
     val big = RocketTileParams(
-      core   = RocketCoreParams(mulDiv = Some(MulDivParams(
-        mulUnroll = 8,
-        mulEarlyOut = true,
-        divEarlyOut = true))),
+      core   = RocketCoreParams(
+        mulDiv = Some(MulDivParams(
+          mulUnroll = 8,
+          mulEarlyOut = true,
+          divEarlyOut = true)),
+        useUser = true,
+        useSupervisor = true),
       dcache = Some(DCacheParams(
         rowBits = site(SystemBusKey).beatBits,
         nMSHRs = 0,

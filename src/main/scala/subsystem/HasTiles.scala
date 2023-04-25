@@ -6,12 +6,13 @@ import Chisel._
 import chisel3.dontTouch
 import freechips.rocketchip.config.{Field, Parameters}
 import freechips.rocketchip.devices.debug.{HasPeripheryDebug, HasPeripheryDebugModuleImp}
-import freechips.rocketchip.devices.tilelink.{BasicBusBlocker, BasicBusBlockerParams, CLINTConsts, PLICKey, CanHavePeripheryPLIC, CanHavePeripheryCLINT}
+import freechips.rocketchip.devices.tilelink.{BasicBusBlocker, BasicBusBlockerParams, CLINTConsts, CanHavePeripheryCLINT, CanHavePeripheryPLIC, PLICKey}
 import freechips.rocketchip.diplomacy._
 import freechips.rocketchip.interrupts._
-import freechips.rocketchip.tile.{BaseTile, LookupByHartIdImpl, TileParams, InstantiableTileParams, MaxHartIdBits, TilePRCIDomain, NMI}
+import freechips.rocketchip.tile.{BaseTile, InstantiableTileParams, LookupByHartIdImpl, MaxHartIdBits, NMI, TilePRCIDomain, TileParams}
 import freechips.rocketchip.tilelink._
 import freechips.rocketchip.prci.{ClockGroup, ResetCrossingType}
+import freechips.rocketchip.uintr.CanHavePeripheryUINTC
 import freechips.rocketchip.util._
 
 /** Entry point for Config-uring the presence of Tiles */
@@ -102,6 +103,7 @@ case class TileSlavePortParams(
 trait HasTileInterruptSources
   extends CanHavePeripheryPLIC
   with CanHavePeripheryCLINT
+  with CanHavePeripheryUINTC
   with HasPeripheryDebug
   with InstantiatesTiles
 { this: BaseSubsystem => // TODO ideally this bound would be softened to LazyModule
@@ -134,7 +136,7 @@ trait HasTileInterruptSources
 }
 
 /** These are sources of "constants" that are driven into the tile.
-  * 
+  *
   * While they are not expected to change dyanmically while the tile is executing code,
   * they may be either tied to a contant value or programmed during boot or reset.
   * They need to be instantiated before tiles are attached within the subsystem containing them.
@@ -317,6 +319,14 @@ trait CanAttachTile {
           .getOrElse { context.seipNode.get }
     }
 
+    // From UINTC: "usip" (only if user mode is enabled)
+    if (domain.tile.tileParams.core.useUser) {
+      domain.crossIntIn(crossingParams.crossingType) :=
+        context.uintcOpt.map { _.intnode }
+          .getOrElse { NullIntSource() }
+    }
+
+
     // 3. Local Interrupts ("lip") are required to already be synchronous to the Tile's clock.
     // (they are connected to domain.tile.intInwardNode in a seperate trait)
 
@@ -330,6 +340,7 @@ trait CanAttachTile {
 
     // 5. Connect NMI inputs to the tile. These inputs are synchronous to the respective core_clock.
     domain.tile.nmiNode := context.tileNMINode
+
   }
 
   /** Notifications of tile status are connected to be broadcast without needing to be clock-crossed. */
