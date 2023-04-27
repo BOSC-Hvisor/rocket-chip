@@ -577,9 +577,10 @@ class CSRFile(
   val reg_suirs = Reg(new SUIRS)
   val reg_suist = Reg(new SUIST)
   val reg_suicfg = Reg(UInt(xLen.W))
-  io.uintr.suirs := reg_suirs
-  io.uintr.suist := reg_suist
-  io.uintr.suicfg := reg_suicfg
+  // bypass for RoCC
+  io.uintr.suirs := Mux(decoded_addr(CSRs.suirs), wdata, reg_suirs)
+  io.uintr.suist := Mux(decoded_addr(CSRs.suist), wdata, reg_suirs)
+  io.uintr.suicfg := Mux(decoded_addr(CSRs.suicfg), wdata, reg_suirs)
 
   val mip = Wire(init=reg_mip)
   mip.lip := (io.interrupts.lip: Seq[Bool])

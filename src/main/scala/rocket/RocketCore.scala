@@ -907,6 +907,11 @@ class Rocket(tile: RocketTile)(implicit p: Parameters) extends CoreModule()(p)
   io.rocc.cmd.bits.rs1 := wb_reg_wdata
   io.rocc.cmd.bits.rs2 := wb_reg_rs2
 
+  // We can read uintr CSRs freely, since RoCC pipeline stage is after WB.
+  if (usingRoCC && usingUser) {
+    io.rocc.uintr := csr.io.uintr
+  }
+
   // gate the clock
   val unpause = csr.io.time(rocketParams.lgPauseCycles-1, 0) === 0 || csr.io.inhibit_cycle || io.dmem.perf.release || take_pc
   when (unpause) { id_reg_pause := false }
