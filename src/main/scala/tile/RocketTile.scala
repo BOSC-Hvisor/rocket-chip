@@ -170,6 +170,7 @@ class RocketTileModuleImp(outer: RocketTile) extends BaseTileModuleImp(outer)
     core.io.rocc.resp <> respArb.get.io.out
     core.io.rocc.busy <> (cmdRouter.get.io.busy || outer.roccs.map(_.module.io.busy).reduce(_ || _))
     core.io.rocc.interrupt := outer.roccs.map(_.module.io.interrupt).reduce(_ || _)
+    outer.roccs.foreach { _.module.io.uintr := core.io.rocc.uintr }
   }
 
   // Rocket has higher priority to DTIM than other TileLink clients

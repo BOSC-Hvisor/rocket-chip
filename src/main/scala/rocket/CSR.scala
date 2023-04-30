@@ -576,11 +576,6 @@ class CSRFile(
 
   val reg_suirs = Reg(new SUIRS)
   val reg_suist = Reg(new SUIST)
-  val reg_suicfg = Reg(UInt(xLen.W))
-  // bypass for RoCC
-  io.uintr.suirs := Mux(decoded_addr(CSRs.suirs), wdata, reg_suirs)
-  io.uintr.suist := Mux(decoded_addr(CSRs.suist), wdata, reg_suirs)
-  io.uintr.suicfg := Mux(decoded_addr(CSRs.suicfg), wdata, reg_suirs)
 
   val mip = Wire(init=reg_mip)
   mip.lip := (io.interrupts.lip: Seq[Bool])
@@ -844,7 +839,6 @@ class CSRFile(
 
     read_mapping += CSRs.suirs -> reg_suirs.asUInt
     read_mapping += CSRs.suist -> reg_suist.asUInt
-    read_mapping += CSRs.suicfg -> reg_suicfg
   }
 
   val decoded_addr = {
@@ -961,7 +955,7 @@ class CSRFile(
   val debugTVec = Mux(reg_debug, Mux(insn_break, debugEntry.U, debugException.U), debugEntry.U)
   val delegate = Bool(usingSupervisor) && reg_mstatus.prv <= PRV.S && Mux(cause(xLen-1), read_mideleg(cause_lsbs), read_medeleg(cause_lsbs))
   val delegateVS = reg_mstatus.v && delegate && Mux(cause(xLen-1), read_hideleg(cause_lsbs), read_hedeleg(cause_lsbs))
-  val delegateU = Bool(usingUser) && reg_mstatus.prv === PRV.U && delegate && read_sideleg(cause_lsbs)
+  val delegateU = Bool(usingUser) && reg_mstatus.prv === PRV.U && delegate && read_sideleg(cause_lsbs) && cause(xLen - 1)
   def mtvecBaseAlign = 2
   def mtvecInterruptAlign = {
     require(reg_mip.getWidth <= xLen)
@@ -1527,15 +1521,17 @@ class CSRFile(
       
       when (decoded_addr(CSRs.sideleg)) { reg_sideleg := wdata }
 
+      // bypass for RoCC
       when (decoded_addr(CSRs.suirs)) {
         val new_suirs = new SUIRS().fromBits(wdata)
         reg_suirs := new_suirs
-      }
+        io.uintr.suirs := new_suirs
+      }.otherwise { io.uintr.suirs := reg_suirs }
       when (decoded_addr(CSRs.suist)) {
         val new_suist = new SUIST().fromBits(wdata)
         reg_suist := new_suist
-      }
-      when (decoded_addr(CSRs.suicfg)) { reg_suicfg := wdata }
+        io.uintr.suist := new_suist
+      }.otherwise { io.uintr.suist := reg_suist }
     }
   }
 

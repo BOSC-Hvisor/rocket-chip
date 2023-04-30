@@ -47,7 +47,7 @@ class RoCCCoreIO(implicit p: Parameters) extends CoreBundle()(p) {
   val interrupt = Output(Bool())
   val exception = Input(Bool())
 
-  val uintr = Input(new CSRUintrIO)
+  val uintr = Input(new CSRUintrIO())
 }
 
 class RoCCIO(val nPTWPorts: Int)(implicit p: Parameters) extends RoCCCoreIO()(p) {
@@ -89,13 +89,23 @@ trait HasLazyRoCCModule extends CanHavePTWModule
   val (respArb, cmdRouter) = if(outer.roccs.nonEmpty) {
     val respArb = Module(new RRArbiter(new RoCCResponse()(outer.p), outer.roccs.size))
     val cmdRouter = Module(new RoccCommandRouter(outer.roccs.map(_.opcodes))(outer.p))
-    outer.roccs.zipWithIndex.foreach { case (rocc, i) =>
+    if (usingUser) {
+      // TODO: support MMIO in IF
+      require(outer.roccs.length == 1)
+      val rocc = outer.roccs.head
       rocc.module.io.ptw ++=: ptwPorts
-      rocc.module.io.cmd <> cmdRouter.io.out(i)
-      val dcIF = Module(new SimpleHellaCacheIF()(outer.p))
-      dcIF.io.requestor <> rocc.module.io.mem
-      dcachePorts += dcIF.io.cache
-      respArb.io.in(i) <> Queue(rocc.module.io.resp)
+      rocc.module.io.cmd <> cmdRouter.io.out(0)
+      dcachePorts += rocc.module.io.mem
+      respArb.io.in(0) <> Queue(rocc.module.io.resp)
+    } else {
+      outer.roccs.zipWithIndex.foreach { case (rocc, i) =>
+        rocc.module.io.ptw ++=: ptwPorts
+        rocc.module.io.cmd <> cmdRouter.io.out(i)
+        val dcIF = Module(new SimpleHellaCacheIF()(outer.p))
+        dcIF.io.requestor <> rocc.module.io.mem
+        dcachePorts += dcIF.io.cache
+        respArb.io.in(i) <> Queue(rocc.module.io.resp)
+      }
     }
 
     fpuOpt foreach { fpu =>

@@ -1212,7 +1212,6 @@ object CSRs {
   /* User Interrupt Status */
   val suist = 0x1b0
   val suirs = 0x1b1
-  val suicfg = 0x1b2
   val all = {
     val res = collection.mutable.ArrayBuffer[Int]()
     res += fflags
@@ -1495,7 +1494,6 @@ object CSRs {
     res += uip
     res += suist
     res += suirs
-    res += suicfg
     res.toArray
   }
   val all32 = {
