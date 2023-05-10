@@ -83,7 +83,7 @@ headers = $(wildcard $(csrc)/*.h)
 model_header = $(generated_dir)/$(long_name)/V$(MODEL).h
 model_header_debug = $(generated_dir_debug)/$(long_name)/V$(MODEL).h
 
-verilog: $(generated_dir)/$(long_name).v
+verilog: $(verilog)
 
 $(emu): $(verilog) $(cppfiles) $(headers) $(INSTALLED_VERILATOR)
 	mkdir -p $(generated_dir)/$(long_name)
