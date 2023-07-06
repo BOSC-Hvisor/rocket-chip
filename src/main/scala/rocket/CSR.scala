@@ -584,6 +584,8 @@ class CSRFile(
   mip.meip := io.interrupts.meip
   // seip is the OR of reg_mip.seip and the actual line from the PLIC
   io.interrupts.seip.foreach { mip.seip := reg_mip.seip || _ }
+  // ueip is the OR of reg_mip.ueip and the actual line from the PLIC
+  io.interrupts.ueip.foreach { mip.ueip := reg_mip.ueip || _ }
   // usip is the OR of reg_mip.usip and the actual line from the UINTC
   io.interrupts.usip.foreach { mip.usip := reg_mip.usip || _ }
   // Simimlar sort of thing would apply if the PLIC had a VSEIP line:
@@ -1264,6 +1266,11 @@ class CSRFile(
         reg_mip.ssip := new_mip.ssip
         reg_mip.stip := new_mip.stip
         reg_mip.seip := new_mip.seip
+        if (usingUser) {
+          reg_mip.usip := new_mip.usip
+          reg_mip.utip := new_mip.utip
+          reg_mip.ueip := new_mip.ueip
+        }
       }
       if (usingHypervisor) {
         reg_mip.vssip := new_mip.vssip
@@ -1340,6 +1347,11 @@ class CSRFile(
       when (decoded_addr(CSRs.sip)) {
         val new_sip = new MIP().fromBits((read_mip & ~read_mideleg) | (wdata & read_mideleg))
         reg_mip.ssip := new_sip.ssip
+        if (usingUser) {
+          reg_mip.utip := new_sip.utip
+          reg_mip.usip := new_sip.usip
+          reg_mip.ueip := new_sip.ueip
+        }
       }
       when (decoded_addr(CSRs.satp)) {
         if (usingVM) {
@@ -1518,7 +1530,7 @@ class CSRFile(
       when (decoded_addr(CSRs.utvec)) { reg_utvec := wdata }
       when (decoded_addr(CSRs.utval)) { reg_utval := wdata }
       when (decoded_addr(CSRs.ucause)) { reg_ucause := wdata & scause_mask }
-      
+
       when (decoded_addr(CSRs.sideleg)) { reg_sideleg := wdata }
 
       // bypass for RoCC

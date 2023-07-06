@@ -124,6 +124,14 @@ trait HasTileInterruptSources
       outputRequiresInput = false,
       inputRequiresOutput = false))
   }
+  val ueipNode = p(PLICKey) match {
+    case Some(_) => None
+    case None    => Some(IntNexusNode(
+      sourceFn = { _ => IntSourcePortParameters(Seq(IntSourceParameters(1))) },
+      sinkFn   = { _ => IntSinkPortParameters(Seq(IntSinkParameters())) },
+      outputRequiresInput = false,
+      inputRequiresOutput = false))
+  }
   /** Source of Non-maskable Interrupt (NMI) input bundle to each tile. */
   val tileNMINode = BundleBridgeEphemeralNode[NMI]()
   val tileNMIIONodes: Seq[BundleBridgeSource[NMI]] = {
@@ -317,6 +325,13 @@ trait CanAttachTile {
       domain.crossIntIn(crossingParams.crossingType) :=
         context.plicOpt .map { _.intnode }
           .getOrElse { context.seipNode.get }
+    }
+
+    //    From PLIC: "ueip" (only if supervisor mode is enabled)
+    if (domain.tile.tileParams.core.useUser) {
+      domain.crossIntIn(crossingParams.crossingType) :=
+        context.plicOpt.map { _.intnode }
+          .getOrElse { context.ueipNode.get }
     }
 
     // From UINTC: "usip" (only if user mode is enabled)
