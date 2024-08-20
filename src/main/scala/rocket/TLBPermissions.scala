@@ -106,7 +106,33 @@ object TLBPageLookup
   }
 
   // Are all pageSize intervals of mapped regions homogeneous?
-  def homogeneous(managers: Seq[TLManagerParameters], pageSize: BigInt): Boolean = {
+  def homogeneous_origin(managers: Seq[TLManagerParameters], pageSize: BigInt): Boolean = {
     groupRegions(managers).values.forall(_.forall(_.alignment >= pageSize))
   }
+
+  def homogeneous(managers: Seq[TLManagerParameters], pageSize: BigInt): Boolean = {
+  // Get Regions
+  val groupedRegions = groupRegions(managers)
+
+  // Traverse the area of each permission group and check the alignment.
+  val allHomogeneous = groupedRegions.values.forall { regions =>
+    regions.forall { region =>
+      val isAligned = region.alignment >= pageSize
+      if (!isAligned) {
+        // Output debugging information
+        println(s"Region ${region} is not aligned to pageSize ${pageSize}.")
+      }
+      isAligned
+    }
+  }
+
+  // Output debugging information: whether all regions are homogeneous
+  if (allHomogeneous) {
+    println(s"All regions are homogeneous with pageSize ${pageSize}.")
+  } else {
+    println(s"Not all regions are homogeneous with pageSize ${pageSize}.")
+  }
+
+  allHomogeneous
+}
 }
